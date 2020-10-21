@@ -1,11 +1,12 @@
+import re
 from dataclasses import dataclass
+from html import unescape
 
 
 @dataclass
 class JobPosition:
     title: str
     link: str
-    summary: str
     published: str
     posted_on: str
     budget: str = None
@@ -13,18 +14,16 @@ class JobPosition:
     category: str = None
     skills: str = None
     country: str = None
+    summary_content: str = None
     location_requirement: str = None
 
     @classmethod
     def from_feed(cls, data: dict):
-        summary = data.get("summary")
-
         return cls(
             title=data.get("title"),
             link=data.get("link"),
-            summary=summary,
             published=data.get("published"),
-            **cls._parse_feed_summary(summary)
+            **cls._parse_feed_summary(data.get("summary"))
         )
 
     @classmethod
@@ -37,5 +36,9 @@ class JobPosition:
             if len(elements) > 1:
                 column_name = elements[0].lower().replace(" ", "_")
                 parsed_data[column_name] = elements[1].split("\n")[0].strip(": ")
+            else:
+                # remove symbols like &nbsp; and &quot;
+                summary_content = re.sub("&quot;", "'", unescape(elements[0]).replace("\xa0", ""))
+                parsed_data["summary_content"] = summary_content
 
         return parsed_data
